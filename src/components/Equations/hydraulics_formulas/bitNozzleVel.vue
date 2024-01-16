@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import store from '/Users/risingphoenix/Documents/iDT/Softwares/Micro Models/prototype/micro_models_3/src/store/index.js'
+import store from '@/store'
 
 // Data
 const TFA = ref('')
