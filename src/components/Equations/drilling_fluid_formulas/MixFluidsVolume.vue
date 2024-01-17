@@ -2,22 +2,30 @@
 import { ref, computed } from 'vue'
 import store from '@/store'
 
+
 // Error Handling
 const errMsg = ref('')
 
 // Data
-const pitLimit = ref('false')
+const pitLimit = ref(false)
 const mudRow = ref([
-    {s_no: 1, mw: ''},
-    {s_no: 2, mw: ''}
+    {s_no: 1, mw: '', vol: ''},
+    {s_no: 2, mw: '', vol: ''}
 ])
 const finalMW = ref('')
-const totVol = ref('')
+const mudVol = ref('')
 
 // Units
 const mwUnit = ref('ppg')
 const finalMWUnit = ref('ppg')
 const mudVolUnit = ref('bbls')
+const volUnit = ref('bbls')
+const mixedMWUnit = ref('ppg')
+
+// Toggle Pit Limit
+const selectMethod = () => {
+    pitLimit.value = !pitLimit.value
+}
 
 // Add Mud Weight Row
 const addRow = () => {
@@ -88,6 +96,93 @@ const mudVolConv = computed(() => {
     }
 })
 
+let preTableMudVol = 'bbls'
+const volTableConv = computed(() => {
+    console.log(mudRow.value[0])
+    if (preTableMudVol == 'bbls') {
+        
+        if (volUnit.value == 'gal') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] * 42).toFixed(0)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'gal'
+        } else if (volUnit.value == 'cu.m') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] * 0.1589).toFixed(3)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'cu.m'
+        } else {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] * 5.615).toFixed(3)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'cu.ft'
+        }
+    } else if (preTableMudVol == 'gal') {
+        if (volUnit.value == 'bbls') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] / 42).toFixed(0)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'bbls'
+        } else if (volUnit.value == 'cu.ft') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] * 0.13368).toFixed(3)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'cu.ft'
+        } else {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] * 0.00378).toFixed(3)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'cu.m'
+        }
+    } else if (preTableMudVol == 'cu.ft') {
+        if (volUnit.value == 'bbls') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] / 5.615).toFixed(3)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'bbls'
+        } else if (volUnit.value == 'gal') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] / 0.13368).toFixed(0)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'gal'
+        } else {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] / 35.3147).toFixed(0)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'cu.m'
+        }
+    } else {
+        if (volUnit.value == 'bbls') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] / 0.1589).toFixed(0)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'bbls'
+        } else if (volUnit.value == 'gal') {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] / 0.00378).toFixed(0)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'gal'
+        } else {
+            for (let i=0; i<=mudRow.value.length-1; i++) {
+                mudRow.value[i]['vol'] = (mudRow.value[i]['vol'] * 35.3147).toFixed(3)
+                console.log(mudRow.value[i]['vol'])
+            }
+            preTableMudVol = 'cu.ft'
+        }
+    }
+})
+
 const mwTableConv = computed(() => {
     if (mwUnit.value == 'ppg') {
         for (let i=0; i<=mudRow.value.length-1; i++) {
@@ -101,20 +196,37 @@ const mwTableConv = computed(() => {
 })
 
 // Calculations
+
+/* Calculate total volume - no Pit limit */
+const totVolCalc = computed(() => {
+    let vols = []
+    if (pitLimit.value == false) {
+        for (let i=0; i<=mudRow.value.length-1; i++) {
+            vols.push(parseFloat(mudRow.value[i]['vol']))
+        }
+        let sum = 0
+        vols.forEach(num=> {
+            sum += num
+        })
+        mudVol.value = sum
+    }
+})
+
 const volReq = computed(() => {
     // Base Units
     let mudVolBase
     let finalMWBase
+    let totVolBase = []
     let mwBase = []
 
     if (mudVolUnit.value == 'cu.ft') {
-        mudVolBase = totVol.value / 5.615
+        mudVolBase = mudVol.value / 5.615
     } else if (mudVolUnit.value == 'cu.m') {
-        mudVolBase = mtotVol.value / 0.1589
+        mudVolBase = mudVol.value / 0.1589
     } else if (mudVolUnit.value == 'gal') {
-        mudVolBase = totVol.value / 42
+        mudVolBase = mudVol.value / 42
     } else {
-        mudVolBase = totVol.value
+        mudVolBase = mudVol.value
     }
 
     if (finalMWUnit.value == 'ppg') {
@@ -126,13 +238,34 @@ const volReq = computed(() => {
     for (let i=0; i<=mudRow.value.length-1; i++) {
         if (mwUnit.value == 'ppg') {
             mwBase.push(mudRow.value[i]['mw'])
+            
         } else {
             mwBase.push(mudRow.value[i]['mw'] * 8.33)
         }
+        totVolBase.push(mudRow.value[i]['vol'])
     }
 
-    if (pitLimit) {
+    if (pitLimit.value) {
+        let V2 = Math.abs((finalMWBase * mudVolBase - mudVolBase * mwBase[0]) / (mwBase[1] - mwBase[0]))
+        let V1 = mudVolBase - V2
 
+        if (mudVolUnit.value == 'bbls') {
+            return [V1, V2]
+        } else if (mudVolUnit.value == 'gal') {
+            console.log(V1, V1*42)
+            return [V1 * 42, V2 * 42]
+        } else if (mudVolUnit.value == 'cu.ft') {
+            return [V1 * 5.615, V2 * 5.615]
+        } else {
+            return [V1 * 0.1589, V2 * 0.1589]
+        }
+    } else {
+        if (mixedMWUnit.value == 'ppg') {
+            return (mwBase[0] * totVolBase[0] + mwBase[1] * totVolBase[1]) / (totVolBase[0] + totVolBase[1])
+        } else {
+            return ((mwBase[0] * totVolBase[0] + mwBase[1] * totVolBase[1]) / (totVolBase[0] + totVolBase[1])) / 8.33
+        }
+        
     }
 })
 
@@ -140,22 +273,67 @@ const volReq = computed(() => {
 <template>
     <div class="d-flex justify-content-between align-items-start">
         <div class="data-show d-flex ms-5 mt-5 align-items-start">
-            <div class="inputs">
+            <div class="inputs w-50">
                 <!-- With or Without Pit Limits -->
                 <!-- Switch for Pit Limit -->
                 <div class="form-check form-switch">
-                    <input @change="selectMethod" v-model="pitLimit" class="form-check-input hover-pointer button" type="checkbox" role="switch" id="pitLimit">
+                    <input @click="selectMethod" v-model="pitLimit" class="form-check-input hover-pointer button" type="checkbox" role="switch" id="pitLimit">
                     <label class="form-check-label" for="pitLimit">Limited Pit Volume</label>
+                </div>
+
+                <!-- Table of Mud Weights-->
+                <div class="border border-dark-subtle rounded bg-light px-4 py-1 mt-3">
+                    <p class="fs-5 fw-medium">Existing MWs in Pit</p>
+                    <table class="table table-hover table-light">
+                        <thead>
+                            <tr>
+                                <th class="text-center fw-semibold text-secondary">#</th>
+                                <th class="text-center fw-semibold text-secondary">Mud Weight <select @change="mwTableConv" v-model="mwUnit">
+                                    <option>ppg</option>
+                                    <option>g/cc</option>
+                                    </select>
+                                </th>
+                                <th v-if="pitLimit" class="text-center fw-semibold text-secondary">Volume <select disabled>
+                                    <option>bbls</option>
+                                    <option>cu.ft</option>
+                                    <option>cu.m</option>
+                                    <option>gal</option>
+                                    </select>
+                                </th>
+                                <th v-else class="text-center fw-semibold text-secondary">Volume <select @change="volTableConv" v-model="volUnit">
+                                    <option>bbls</option>
+                                    <option>cu.ft</option>
+                                    <option>cu.m</option>
+                                    <option>gal</option>
+                                    </select>
+                                </th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in mudRow">
+                                <td class="text-center">{{ item.s_no }}</td>
+                                <td><input type="number" class="form-control form-control-sm" v-model="item.mw"></td>
+                                <td v-if="pitLimit"><input type="number" class="form-control form-control-sm" v-model="item.vol" disabled></td>
+                                <td v-else><input @change="totVolCalc" type="number" class="form-control form-control-sm" v-model="item.vol"></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Final Mud Weight -->
                 <div class="d-flex mt-3 align-items-center">
                     <div class="form-floating">
-                        <input class="form-control" type="number" min="0" id="finalMW" step="0.1" placeholder="Final Weight" v-model="finalMW">
-                        <label for="finalMW" class="form-label">Final Mud Weight</label>
+                        <input v-if="!pitLimit" class="form-control" type="number" min="0" id="finalMW" step="0.1" placeholder="Final Weight" v-model="finalMW" disabled>
+                        <input v-else class="form-control" type="number" min="0" id="finalMW" step="0.1" placeholder="Final Weight" v-model="finalMW">
+                        <label for="finalMW" class="form-label">Mud Weight Required</label>
                     </div>
                     <div class="unit ms-3">
-                        <select @change="finalMWConv" v-model="finalMWUnit" class="form-select border-info">
+                        <select v-if="!pitLimit" @change="finalMWConv" v-model="finalMWUnit" class="form-select border-info" disabled>
+                            <option>ppg</option>
+                            <option>g/cc</option>
+                        </select>
+                        <select v-else @change="finalMWConv" v-model="finalMWUnit" class="form-select border-info">
                             <option>ppg</option>
                             <option>g/cc</option>
                         </select>
@@ -165,11 +343,13 @@ const volReq = computed(() => {
                 <!-- Final Volume of Mud -->
                 <div class="d-flex mt-3 align-items-center">
                     <div class="form-floating">
-                        <input class="form-control" type="number" min="0" id="mudVolume" step="1" placeholder="Mud Volume" v-model="totVol">
-                        <label for="mudVolume" class="form-label">Volume of Mud</label>
+                        <input v-if="!pitLimit" readonly class="form-control-plaintext" type="number" min="0" id="mudVolume" step="1" placeholder="Mud Volume" v-model="mudVol">
+                        <input v-else class="form-control" type="number" min="0" id="mudVolume" step="1" placeholder="Mud Volume" v-model="mudVol">
+                        <label for="mudVolume" class="form-label">Final Volume of Mud</label>
                     </div>
                     <div class="unit ms-3">
-                        <select @change="mudVolConv" v-model="mudVolUnit" class="form-select border-info">
+                        <div v-if="!pitLimit">{{ volUnit }}</div>
+                        <select v-else @change="mudVolConv" v-model="mudVolUnit" class="form-select border-info">
                             <option>bbls</option>
                             <option>cu.ft</option>
                             <option>cu.m</option>
@@ -178,34 +358,45 @@ const volReq = computed(() => {
                     </div>
                 </div>
 
-                <!-- Table of Mud Weights-->
-                <div class="border border-dark-subtle rounded bg-light px-4 py-1 mt-3">
-                    <p class="fs-5 fw-medium">Existing MW</p>
-                    <div class="table-buttons d-flex justify-content-end mt-3 mb-3">
-                        <button @click="addRow" type="button" class="btn btn-success btn-sm me-2" style="--bs-btn-font-size: .75rem;">Add</button>
-                        <button @click="deleteRow" type="button" class="btn btn-danger btn-sm" :class="{ disabled: mudRow.length==2 }" style="--bs-btn-font-size: .75rem;">Delete</button>
-                    </div>
+                
+            </div>
+
+            <div class="outputs ms-5">
+                <table v-if="pitLimit" class="table">
+                    <thead>
+                        <tr>
+                            <th colspan="2" class="text-center"><span class="text-secondary text-uppercase fs-6">Volume {{ mudVolUnit }}</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><h5 class="text-center text-secondary-emphasis">Mud #1</h5></td>
+                            <td><h5 class="text-center text-secondary-emphasis">Mud #2</h5></td>
+                        </tr>
+                        <tr>
+                            <td><h3 class="text-center text-success">{{ Math.ceil(volReq[0]) }}</h3></td>
+                            <td><h3 class="text-center text-success">{{ Math.ceil(volReq[1]) }}</h3></td>
+                        </tr>
+                    </tbody>
                     
-                    <table class="table table-hover table-light">
-                        <thead>
-                            <tr>
-                                <th class="text-center fw-semibold text-secondary">#</th>
-                                <th class="text-center fw-semibold text-secondary">Mud Weight <select @change="mwTableConv" v-model="mwUnit">
+                </table>
+
+                <div v-else class="lp-height d-flex align-items-end">
+                    <div class="lp-height-out">
+                        <span class="text-secondary text-uppercase fs-6">Drilling Fluid Density</span>
+                        <h3 class="text-center text-success">{{ volReq.toFixed(2) }}</h3>
+                    </div>
+                    <div class="lp-height-unit">
+                        <span>
+                            <select class="form-select" v-model="mixedMWUnit">
                                 <option>ppg</option>
                                 <option>g/cc</option>
-                            </select></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="item in mudRow">
-                                <td class="text-center">{{ item.s_no }}</td>
-                                <td><input class="form-control form-control-sm" v-model="item.mw"></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </select>
+                        </span>
+                    </div>
                 </div>
-                {{ pitLimit }}
             </div>
+
         </div>
     </div>
 </template>
