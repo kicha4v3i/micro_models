@@ -3,153 +3,39 @@ import { onMounted, ref, watch } from 'vue'
 import store from '../store/index.js'
 import { supabase } from '../lib/supabaseClient.js'
 
-
-// Units
-const mwUnit = ref('ppg')
-const bitSizeUnit = ref('inch')
-const flowrateUnit = store.inputUnits.flowrateUnit
-const pipeODUnit = ref('inch')
-const pipeIDUnit = ref('inch')
-const pipeLengthUnit = ref('ft')
-
-// Load well information data
-const loadMainInputs = async() => {
-    if (store.state.user) {
-        // User ID
-        try {
-            let { data: user_id, error } = await supabase.from('well_information').select('id')
-            store.userData.userId = user_id[0].id
-            if (error) throw error
-        } catch (error) {
-            console.log(error.message)
-        }
-
-        // Bit Size
-        try {
-            let { data: bitSize, error } = await supabase.from('well_information').select('bit_size')
-            store.mainInputs.bitSize = bitSize[0].bit_size
-            localStorage.setItem('bit_size', store.mainInputs.bitSize)
-
-            if (error) throw error
-        } catch (error) {
-            console.log(error.message)
-        }
-
-        // Mud Weight
-        try {
-            let { data: mudWeight, error } = await supabase.from('well_information').select('mud_weight')
-            store.mainInputs.mw = mudWeight[0].mud_weight
+// Load Data when signed in
+window.onload = supabase.auth.onAuthStateChange((event, session) => {
+    if (event == 'SIGNED_IN') {
+        // Get User ID
+        const loggedInUserId = store.state.user.id
+        // Check if user ID exists in Well Information Table
         
-            localStorage.setItem('mud_weight', store.mainInputs.mw)
-
-            if (error) throw error
-        } catch (error) {
-            console.log(error.message)
-        }
-
-        // Flowrate
-        try {
-            let { data: flowrate, error } = await supabase.from('well_information').select('flowrate')
-            store.mainInputs.flowrate = flowrate[0].flowrate
-           
-            localStorage.setItem('flowrate', store.mainInputs.flowrate)
-        if (error) throw error
-        } catch (error) {
-            console.log(error.message)
-        }
-
-        // Pipe OD
-        try {
-            let { data: pipeOD, error } = await supabase.from('well_information').select('pipe_od')
-            store.mainInputs.pipeOD = pipeOD[0].pipe_od
-           
-            localStorage.setItem('pipe_od', store.mainInputs.pipeOD)
-        if (error) throw error
-        } catch (error) {
-            console.log(error.message)
-        }
-
-        // Pipe ID
-        try {
-            let { data: pipeID, error } = await supabase.from('well_information').select('pipe_id')
-            store.mainInputs.pipeID = pipeID[0].pipe_id
-           
-            localStorage.setItem('pipe_id', store.mainInputs.pipeID)
-        if (error) throw error
-        } catch (error) {
-            console.log(error.message)
-        }
-
-        // Pipe Length
-        try {
-            let { data: pipeLength, error } = await supabase.from('well_information').select('pipe_length')
-            store.mainInputs.pipeLength = pipeLength[0].pipe_length
-           
-            localStorage.setItem('pipe_length', store.mainInputs.pipeLength)
-        if (error) throw error
-        } catch (error) {
-            console.log(error.message)
-        }
+        loadData()
     }
-    
-}
-
-// On Load
-window.onload = loadMainInputs()
-
-onMounted(() => {
-    store.mainInputs.bitSize = localStorage.getItem('bit_size') || ''
-    store.mainInputs.mw = localStorage.getItem('mud_weight') || ''
-    store.mainInputs.flowrate = localStorage.getItem('flowrate') || ''
-    store.mainInputs.pipeOD = localStorage.getItem('pipe_od') || ''
-    store.mainInputs.pipeID = localStorage.getItem('pipe_id') || ''
-    store.mainInputs.pipeLength = localStorage.getItem('pipe_length') || ''
-    addID()
 })
 
-
-// Store Well Information Data
-/* Add id in database */
-const addID = async() => {
-    const { data: { user } } = await supabase.auth.getUser()
-    let { data: user_id, error1 } = await supabase.from('well_information').select('id')
-    if (user_id == null || user_id == '') {
-        const { data, error } = await supabase.from('well_information').insert([
-            {
-                id: user.id
-            }
-        ])
+const loadData = async () => {
+    try {
+        // If user id exists in Well Info db
+        const { data, error } = await supabase.from('well_information').select('*').eq('id',store.state.user.id)
+        if (error) throw error
+        store.mainInputs.bitSize = data[0].bit_size
+        store.mainInputs.mw = data[0].mud_weight
+        store.mainInputs.flowrate = data[0].flowrate
+        store.mainInputs.pipeOD = data[0].pipe_od
+        store.mainInputs.pipeID = data[0].pipe_id
+        store.mainInputs.pipeLength = data[0].pipe_length
+    } catch {
+        // If user id does not exist in Well Info db
+        const { error } = await supabase.from('well_information').insert({id: store.state.user.id})
     }
 }
 
-
+// Store well info data to DB
 const storeBitSize = async() => {
     try {
-        // Check if block executed
-        console.log('id', store.userData.userId)
-        console.log(store.state.user.id)
-        
-        // If new data, then create a new row of data
-        if (store.userData.userId == null) {
-            console.log('Data Added')
-            const { data, error } = await supabase.from('well_information').insert([
-                {   
-                    id: store.state.user.id,
-                    bit_size: store.mainInputs.bitSize,
-                }
-            ])
-
-            // Store in local storage
-            localStorage.setItem('bit_size', store.mainInputs.bitSize)
-            if (error) throw error
-        } else {
-            // If update data, then update
-            console.log('Data Updated')
-            const { data, error } = await supabase.from('well_information').update({ bit_size: store.mainInputs.bitSize }).eq('id', store.state.user.id).select()
-            localStorage.setItem('bit_size', store.mainInputs.bitSize)
-            if (error) throw error
-        }
-        
+        console.log('executed bit size')
+        const { data, error } = await supabase.from('well_information').update({'bit_size': store.mainInputs.bitSize}).eq('id',store.state.user.id).select()
     } catch (error) {
         console.log('error', error.message)
     }
@@ -157,27 +43,8 @@ const storeBitSize = async() => {
 
 const storeMudWeight = async() => {
     try {
-        // If new data, then create data
-        if (store.userData.userId == null) {
-            console.log('Data Added')
-            const { data, error } = await supabase.from('well_information').insert([
-                {   
-                    id: store.state.user.id,
-                    mud_weight: store.mainInputs.mw,
-                }
-            ])
-            if (error) throw error
-            //Store in local storage
-            localStorage.setItem('mud_weight', store.mainInputs.mw)
-        } else {
-            // Update data otherwise
-            console.log('Data Updated')
-            const { data, error } = await supabase.from('well_information').update({ mud_weight: store.mainInputs.mw }).eq('id', store.state.user.id).select()
-            if (error) throw error
-            
-            //Store in local storage
-        }
-        
+        console.log('executed mud weight')
+        const { data, error } = await supabase.from('well_information').update({'mud_weight': store.mainInputs.mw}).eq('id',store.state.user.id).select()
     } catch (error) {
         console.log('error', error.message)
     }
@@ -185,20 +52,8 @@ const storeMudWeight = async() => {
 
 const storeFlowrate = async() => {
     try {
-        if (store.userData.userId == null) {
-            console.log('Flowrate Added')
-            const { data, error } = await supabase.from('well_information').insert([
-                {   
-                    id: store.state.user.id,
-                    flowrate: store.mainInputs.flowrate,
-                }
-            ])
-            if (error) throw error
-        } else {
-            console.log('Flowrate Updated')
-            const { data, error } = await supabase.from('well_information').update({ flowrate: store.mainInputs.flowrate }).eq('id', store.state.user.id).select()
-            if (error) throw error
-        }
+        console.log('executed mud weight')
+        const { data, error } = await supabase.from('well_information').update({'flowrate': store.mainInputs.flowrate}).eq('id',store.state.user.id).select()
     } catch (error) {
             console.log(error.message)
     }
@@ -206,20 +61,8 @@ const storeFlowrate = async() => {
 
 const storepipeOD = async() => {
     try {
-        if (store.userData.userId == null) {
-            console.log('Pipe OD added')
-            const { data, error } = await supabase.from('well_information').insert([
-                {   
-                    id: store.state.user.id,
-                    pipe_od: store.mainInputs.pipeOD,
-                }
-            ])
-            if (error) throw error
-        } else {
-            console.log('Pipe OD Updated')
-            const { data, error } = await supabase.from('well_information').update({ pipe_od: store.mainInputs.pipeOD }).eq('id', store.state.user.id).select()
-            if (error) throw error
-        }
+        console.log('executed mud weight')
+        const { data, error } = await supabase.from('well_information').update({'pipe_od': store.mainInputs.pipeOD}).eq('id',store.state.user.id).select()
     } catch (error) {
             console.log(error.message)
     }
@@ -227,20 +70,8 @@ const storepipeOD = async() => {
 
 const storePipeID = async() => {
     try {
-        if (store.userData.userId == null) {
-            console.log('Pipe ID added')
-            const { data, error } = await supabase.from('well_information').insert([
-                {   
-                    id: store.state.user.id,
-                    pipe_id: store.mainInputs.pipeID,
-                }
-            ])
-            if (error) throw error
-        } else {
-            console.log('Pipe ID Updated')
-            const { data, error } = await supabase.from('well_information').update({ pipe_id: store.mainInputs.pipeID }).eq('id', store.state.user.id).select()
-            if (error) throw error
-        }
+        console.log('executed mud weight')
+        const { data, error } = await supabase.from('well_information').update({'pipe_id': store.mainInputs.pipeID}).eq('id',store.state.user.id).select()
     } catch (error) {
             console.log(error.message)
     }
@@ -248,21 +79,8 @@ const storePipeID = async() => {
 
 const storePipeLength = async() => {
     try {
-        if (store.userData.userId == null) {
-            console.log('Pipe Length added')
-            const { data, error } = await supabase.from('well_information').insert([
-                {   
-                    id: store.state.user.id,
-                    pipe_length: store.mainInputs.pipeLength,
-                }
-            ])
-            if (error) throw error
-        } else {
-            console.log('Pipe Length Updated')
-            const { data, error } = await supabase.from('well_information').update({ pipe_length: store.mainInputs.pipeLength }).eq('id', store.state.user.id).select()
-            if (error) throw error
-        }
-        localStorage.setItem('pipe_length', store.mainInputs.pipeLength)
+        console.log('executed mud weight')
+        const { data, error } = await supabase.from('well_information').update({'pipe_length': store.mainInputs.pipeLength}).eq('id',store.state.user.id).select()
     } catch (error) {
             console.log(error.message)
     }
