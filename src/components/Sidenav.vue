@@ -68,16 +68,24 @@ const displayDCW = () => {
     store.methods.setDCW()
 }
 
+// Collapse SideNav
+const collapse = ref(false)
+const collapseToggle = () => {
+    store.sidenav_collapse.value = !store.sidenav_collapse.value
+    collapse.value = !collapse.value
+}
+
 // Tabs Open
 const adfTabActive = ref(false)
 const hydTabActive = ref(false)
-const hydTabInactive = ref(true)
 const wcTabActive = ref(false)
 
 // Current Tab Declaration
 const currentTab = ref('')
 
 const activateAdfTab = (tab) => {
+    adfTabActive.value = true
+    store.adfTab.tabName = tab
     currentTab.value = tab
     store.hydTab.activeTab = null
     store.adfTab.activeTab = adfTabs[tab]
@@ -86,6 +94,7 @@ const activateAdfTab = (tab) => {
 
 const activateDdTab = (tab) => {
     currentTab.value = tab
+    store.ddTab.tabName = tab
     store.hydTab.activeTab = null
     store.ddTab.activeTab = ddTabs[tab]
     store.adfTab.activeTab = null
@@ -94,6 +103,7 @@ const activateDdTab = (tab) => {
 
 const activateDfTab = (tab) => {
     currentTab.value = tab
+    store.dfTab.tabName = tab
     store.hydTab.activeTab = null
     store.ddTab.activeTab = null
     store.dfTab.activeTab = dfTabs[tab]
@@ -103,17 +113,16 @@ const activateDfTab = (tab) => {
 
 const activateHydTab = (tab) => {
     currentTab.value = tab
+    store.hydTab.tabName = tab
     store.adfTab.activeTab = null
     store.hydTab.activeTab = hydTabs[tab]
     store.wcTab.activeTab = null
-    console.log('before', hydTabActive.value)
     hydTabActive.value = true
-    hydTabInactive.value = false
-    console.log('after', hydTabActive.value)
 }
 
 const activateWCTab = (tab) => {
     currentTab.value = tab
+    store.wcTab.tabName = tab
     store.adfTab.activeTab = null
     store.hydTab.activeTab = null
     store.wcTab.activeTab = wcTabs[tab]
@@ -186,12 +195,12 @@ const wcTabs = {
 </script>
 
 <template>
-    <aside>
-        <div class="applied-drilling accordion accordion-flush" id="f-list">
+    <aside  :class="{ collapsed: collapse }">
+        <div class="applied-drilling accordion accordion-flush open list" id="f-list">
             <!-- Applied Drilling Formulas -->
             <div class="accordion-item">
                 <p class="accordion-header" data-bs-toggle="collapse" data-bs-target="#adf-list"><a href="#">Applied Drilling Formulas</a></p>
-                <div id="adf-list" class="accordion-collapse collapse" :class="{ show: adfTabActive }" data-bs-parent="#f-list">
+                <div id="adf-list" class="accordion-collapse" :class="{'collapse': !adfTabActive}" data-bs-parent="#f-list">
                     
                     <!-- Dynamic Applied Drilling Formuals Components -->
                     <ul class="list-items">
@@ -230,11 +239,11 @@ const wcTabs = {
             <!-- Hydraulics Formulas -->
             <div class="accordion-item">
                 <p class="accordion-header" data-bs-toggle="collapse" data-bs-target="#hyd-list"><a href="#">Hydraulics Formulas</a></p>
-                <div id="hyd-list" class="accordion-collapse" :class="{ open: hydTabActive, collapse: hydTabInactive }" data-bs-parent="#f-list">
+                <div id="hyd-list" class="accordion-collapse collapse" data-bs-parent="#f-list">
 
                     <!-- Dynamic Hydraulics Components -->
                     <ul class="list-items">
-                        <li v-for="(_, tab) in hydTabs" :key="tab"  class="text-white" :class="{ active: currentTab == tab }" @click="activateHydTab(tab)"><router-link :to="{name: 'hyd'}">{{ tab }}</router-link></li>
+                        <li v-for="(_, tab) in hydTabs" :key="name"  class="text-white" :class="{ active: currentTab == tab }" @click="activateHydTab(tab)"><router-link :to="{name: 'hyd'}">{{ tab }}</router-link></li>
                     </ul>
 
                 </div>
@@ -242,7 +251,7 @@ const wcTabs = {
 
             <!-- Well Control Formulas -->
             <div class="accordion-item">
-                <p class="accordion-header" data-bs-toggle="collapse" data-bs-target="#wc-list"><a href="#">Well Control Formulas</a></p>
+                <p class="accordion-header"><a href="#" data-bs-toggle="collapse" data-bs-target="#wc-list">Well Control Formulas</a></p>
                 <div id="wc-list" class="accordion-collapse collapse" :class="{ show: wcTabActive }" data-bs-parent="#f-list">
 
                     <!-- Dynamic Hydraulics Components -->
@@ -254,11 +263,20 @@ const wcTabs = {
             </div>
             
         </div>
+        <div>
+
+        </div>
+        <div class="toggle" @click="collapseToggle">
+            <i class="fa-solid fa-angles-left fa-xl" style="color: #008cb4;"></i>
+        </div>
     </aside>
 </template>
 
 <style scoped>
 aside {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     width: 230px;
     padding-left: 10px;
     padding-right: 50px;
@@ -266,6 +284,47 @@ aside {
     padding-top: 20px;
     background: rgb(247, 247, 247);
     height: 93vh;
+    box-shadow: 0px 1px 3px gray;
+    transition: 0.3s;
+}
+
+.collapsed {
+    width: 30px;
+}
+
+.collapsed .toggle {
+    transform: rotate(180deg);
+    margin-left: 30px;
+}
+
+
+.toggle {
+    position: relative;
+    margin-left: 180px;
+    left: 0px;
+    transition: 0.3s;
+}
+
+.toggle:hover {
+    cursor: pointer;
+    left: -5px;
+}
+
+.collapsed .toggle:hover {
+    left: 5px;
+}
+
+.list {
+    opacity: 1;
+    transition: 0.2s;
+}
+
+.list .accordion-item .accordion-header {
+    width: 180px;
+}
+
+.collapsed .list {
+    opacity: 0;
 }
 
 .accordion-item {
