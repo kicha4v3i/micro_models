@@ -8,28 +8,36 @@ const userData = reactive({
     userId: ''
 })
 
+// Sidenav Collapsed State
+const sidenav_collapse = ref(false)
+
 // Applied Drilling Formulas Tabs
 const adfTab = reactive({
+    tabName: null,
     activeTab: null
 })
 
 // Directional Drilling Formulas Tab
 const ddTab = reactive({
+    tabName: null,
     activeTab: null
 })
 
 // Drilling Fluid Formulas Tab
-const dfTab = reactive({
-    activeTav: null
+const dfTab = reactive({    
+    tabName: null,
+    activeTab: null
 })
 
 // Hydraulics Formulas Tabs
 const hydTab = reactive({
+    tabName: null,
     activeTab: null
 })
 
 // Well Control Formulas Tabs
 const wcTab = reactive({
+    tabName: null,
     activeTab: null
 })
 
@@ -118,6 +126,7 @@ const state = reactive({
 
 export default {
     userData, 
+    sidenav_collapse,
     state,
     methods,
     adfTab,
