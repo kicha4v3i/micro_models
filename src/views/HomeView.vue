@@ -2,12 +2,19 @@
 import Sidenav from '../components/Sidenav.vue'
 import MainInputs from '../components/MainInputs.vue'
 import { supabase } from '../lib/supabaseClient.js'
+import router from '@/router';
+import store from '@/store'
 
+const user = store.state.user;
+
+if (!user) {
+    router.push({name: 'login'})
+}
 
 </script>
 
 <template>
-    <div class="d-flex">
+    <div class="d-flex justify-content-between">
         <Sidenav />
 
         <div class="main ms-3 mx-auto mt-3 d-flex justify-content-between">
@@ -24,10 +31,12 @@ import { supabase } from '../lib/supabaseClient.js'
                 <h4>Specific Inputs</h4>
                 <p>These are additional inputs that are required for a specific calculation to perform. These are displayed for the required equation model. </p>
             </div>
-            <div>
-                <MainInputs />
-            </div>
+            
+        </div>
+        <div>
+            <MainInputs />
         </div>
     </div>
     
 </template>
+
